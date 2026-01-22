@@ -3,19 +3,19 @@
 # Stage 1: Build frontend
 FROM node:18-alpine AS frontend-builder
 
-WORKDIR /app/frontend
+WORKDIR /app
 
 # Copy package files
-COPY frontend/package*.json ./
+COPY frontend/package*.json ./frontend/
 
 # Install all dependencies (including devDependencies for build)
-RUN npm ci
+RUN cd frontend && npm ci
 
 # Copy frontend source
-COPY frontend/ ./
+COPY frontend/ ./frontend/
 
-# Build frontend
-RUN npm run build
+# Build frontend (vite outputs to ../static which becomes /app/static)
+RUN cd frontend && npm run build
 
 # Stage 2: Production image
 FROM python:3.11-slim
@@ -36,7 +36,7 @@ COPY run.py ./
 COPY migrate_history.py ./
 
 # Copy built frontend from builder stage
-COPY --from=frontend-builder /app/frontend/dist ./static/
+COPY --from=frontend-builder /app/static ./static/
 
 # Create instance directory for SQLite database
 RUN mkdir -p /app/instance
